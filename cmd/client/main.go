@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
@@ -19,6 +22,7 @@ const(
 func main() {
 	fmt.Println("Starting Peril client...")
 	connstr:="amqp://guest:guest@localhost:5672/"
+	done := make(chan os.Signal, 1)
 	conn, err:=amqp.Dial(connstr)
 	if err== nil{
 		fmt.Println("Connection Successfull")
@@ -30,7 +34,10 @@ func main() {
 		fmt.Printf("%s",err)
 	}
 	DeclareAndBind(conn,routing.ExchangePerilDirect,routing.PauseKey+"."+username,routing.PauseKey, 1)
-	
+	defer conn.Close()
+		signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
+		<-done
+		fmt.Println("Received signal, exiting gracefully...")
 }
 func DeclareAndBind(
 		conn *amqp.Connection,
@@ -47,15 +54,16 @@ func DeclareAndBind(
 		var q amqp.Queue
 		switch queueType {
 			case 0:
-				q,err= ch.QueueDeclare("amqpQueue",true,false,false,false,nil)
+				q,err= ch.QueueDeclare(queueName,true,false,false,false,nil)
 			case 1:
-				q,err= ch.QueueDeclare("amqpQueue",false, true,true, false, nil)
+				q,err= ch.QueueDeclare(queueName,false, true,true, false, nil)
 			default:
 				return ch, amqp.Queue{}, nil
 		}
 		if err!=nil{
 			return ch, amqp.Queue{}, err
 		}
-		ch.QueueBind("amqpQueueBind",key,exchange,false,nil)
+		ch.QueueBind("amqpQueue",key,exchange,false,nil)
+		
 		return ch, q, nil
 	}

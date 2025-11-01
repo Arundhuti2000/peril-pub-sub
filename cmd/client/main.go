@@ -7,6 +7,7 @@ import (
 	"syscall"
 
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -35,6 +36,45 @@ func main() {
 	}
 	DeclareAndBind(conn,routing.ExchangePerilDirect,routing.PauseKey+"."+username,routing.PauseKey, 1)
 	defer conn.Close()
+	gamelogic.NewGameState(username)
+	var words []string
+	for{
+		if words=gamelogic.GetInput();words==nil {
+			continue
+		}
+		switch words[0] {
+			case "spawn": {
+				fmt.Println("Pause...")
+				pubsub.PublishJSON(ch, routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{
+					IsPaused: true,
+				})
+			}
+			case "move": {
+				fmt.Println("Resume...")
+				pubsub.PublishJSON(ch, routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{
+					IsPaused: true,
+				})
+			}
+			case "status":{
+				fmt.Println("Exiting Gracefully...")
+				break
+			}
+			case "help":{
+				fmt.Println("Exiting Gracefully...")
+				break
+			}
+			case "spam":{
+				fmt.Println("Exiting Gracefully...")
+				break
+			}
+			case "quit":{
+				fmt.Println("Exiting Gracefully...")
+				break
+			}
+			default: fmt.Println("Unknown Command")
+		}
+	}
+
 		signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
 		<-done
 		fmt.Println("Received signal, exiting gracefully...")

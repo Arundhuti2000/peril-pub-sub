@@ -32,19 +32,38 @@ func main() {
 	pubsub.PublishJSON(ch, routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{
 		IsPaused: true,
 	})
-	
-
 	defer conn.Close()
-	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
-	<-done
+
+	
 	gamelogic.PrintServerHelp()
 	var words []string
 	for{
 		if words=gamelogic.GetInput();words==nil {
 			continue
 		}
-		
+		switch words[0] {
+			case "pause": {
+				fmt.Println("Pause...")
+				pubsub.PublishJSON(ch, routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{
+					IsPaused: true,
+				})
+			}
+			case "resume": {
+				fmt.Println("Resume...")
+				pubsub.PublishJSON(ch, routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{
+					IsPaused: true,
+				})
+			}
+			case "quit":{
+				fmt.Println("Exiting Gracefully...")
+				break
+			}
+			default: fmt.Println("Unknown Command")
+		}
 	}
+	
+	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
+	<-done
 	// fmt.Println("Received signal, exiting gracefully...")
 	
 }

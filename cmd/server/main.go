@@ -31,7 +31,7 @@ func main() {
 	})
 	defer conn.Close()
 
-	
+	pubsub.DeclareAndBind(conn,routing.ExchangePerilTopic,"game_logs","game_logs.*", 0)
 	gamelogic.PrintServerHelp()
 	var words []string
 	for{

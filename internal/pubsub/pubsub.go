@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 type SimpleQueueType int8
@@ -23,6 +24,23 @@ func PublishJSON[T any](ch *amqp.Channel, exchange, key string, val T) error{
 	fmt.Println("")
 	return nil
 }
+func SubscribeJSON[T any](
+    conn *amqp.Connection,
+    exchange,
+    queueName,
+    key string,
+    queueType SimpleQueueType, // an enum to represent "durable" or "transient"
+    handler func(T),
+) error{
+	pubsub.DeclareAndBind(conn,exchange,queueName,key,queueType)
+	channel:= make(chan amqp.Delivery)
+	channel.Consume
+	return nil
+}
+
+
+
+
 func DeclareAndBind(
 		conn *amqp.Connection,
 		exchange,

@@ -2,9 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
@@ -15,7 +12,7 @@ import (
 func main() {
 	
 	connstr:="amqp://guest:guest@localhost:5672/"
-	done := make(chan os.Signal, 1)
+	// done := make(chan os.Signal, 1)
 	conn, err:=amqp.Dial(connstr)
 	if err== nil{
 		fmt.Println("Connection Successfull")
@@ -62,8 +59,8 @@ func main() {
 		}
 	}
 	
-	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
-	<-done
+	// signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
+	// <-done
 	// fmt.Println("Received signal, exiting gracefully...")
 	
 }

@@ -2,12 +2,8 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
-	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -23,7 +19,7 @@ const(
 func main() {
 	fmt.Println("Starting Peril client...")
 	connstr:="amqp://guest:guest@localhost:5672/"
-	done := make(chan os.Signal, 1)
+	// done := make(chan os.Signal, 1)
 	conn, err:=amqp.Dial(connstr)
 	if err== nil{
 		fmt.Println("Connection Successfull")
@@ -36,7 +32,7 @@ func main() {
 	}
 	DeclareAndBind(conn,routing.ExchangePerilDirect,routing.PauseKey+"."+username,routing.PauseKey, 1)
 	defer conn.Close()
-	gamelogic.NewGameState(username)
+	gamestate:=gamelogic.NewGameState(username)
 	var words []string
 	for{
 		if words=gamelogic.GetInput();words==nil {
@@ -44,40 +40,39 @@ func main() {
 		}
 		switch words[0] {
 			case "spawn": {
-				fmt.Println("Pause...")
-				pubsub.PublishJSON(ch, routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{
-					IsPaused: true,
-				})
+				fmt.Println("Spawn...")
+				gamestate.CommandSpawn(words)
+				
 			}
 			case "move": {
-				fmt.Println("Resume...")
-				pubsub.PublishJSON(ch, routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{
-					IsPaused: true,
-				})
+				fmt.Println("Move...")
+				gamestate.CommandMove(words)
 			}
 			case "status":{
-				fmt.Println("Exiting Gracefully...")
-				break
+				fmt.Println("Status...")
+				gamestate.CommandStatus()
 			}
 			case "help":{
-				fmt.Println("Exiting Gracefully...")
-				break
+				fmt.Println("Help...")
+				gamelogic.PrintClientHelp()
 			}
 			case "spam":{
-				fmt.Println("Exiting Gracefully...")
-				break
+				fmt.Println("Spamming not allowed yet!...")
+			
 			}
 			case "quit":{
+				gamelogic.PrintQuit()
 				fmt.Println("Exiting Gracefully...")
 				break
 			}
-			default: fmt.Println("Unknown Command")
+			default: {
+				fmt.Println("Unknown Command")
+			}
 		}
 	}
-
-		signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
-		<-done
-		fmt.Println("Received signal, exiting gracefully...")
+		// signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
+		// <-done
+		// fmt.Println("Received signal, exiting gracefully...")
 }
 func DeclareAndBind(
 		conn *amqp.Connection,

@@ -51,8 +51,10 @@ func SubscribeJSON[T any](
 	}
 	// go UnMarshal[T](chDeli)
 	for val := range chDeli{
-		var result []T
-		json.Unmarshal(val.Body,result)
+		var result T
+		go json.Unmarshal(val.Body,result)
+		handler(result)
+		val.Ack(false)
 	}
 	return nil
 }

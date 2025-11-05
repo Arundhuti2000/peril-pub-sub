@@ -9,7 +9,15 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-
+func handlerPause(gs *gamelogic.GameState) func(routing.PlayingState) {
+	return func(ps routing.PlayingState) {
+		if gs.Paused == true {
+			gs.HandlePause(routing.PlayingState{IsPaused: true})
+		} else {
+			gs.HandlePause(routing.PlayingState{IsPaused: false})
+		}
+	}
+}
 
 func main() {
 	fmt.Println("Starting Peril client...")

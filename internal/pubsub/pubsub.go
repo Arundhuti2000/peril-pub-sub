@@ -24,6 +24,12 @@ func PublishJSON[T any](ch *amqp.Channel, exchange, key string, val T) error{
 	fmt.Println("")
 	return nil
 }
+// func UnMarshal[T any](chDeli <-chan amqp.Delivery) amqp.Delivery{
+// 	for val := range chDeli{
+// 		var result []T
+// 		json.Unmarshal(val.Body,result)
+// 	}
+// }
 func SubscribeJSON[T any](
     conn *amqp.Connection,
     exchange,
@@ -43,12 +49,13 @@ func SubscribeJSON[T any](
 	if err!=nil{
 		return err
 	}
-	for i :=range chDeli{
-		
+	// go UnMarshal[T](chDeli)
+	for val := range chDeli{
+		var result []T
+		json.Unmarshal(val.Body,result)
 	}
 	return nil
 }
-
 
 
 

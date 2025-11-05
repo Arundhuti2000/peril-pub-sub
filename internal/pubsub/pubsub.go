@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 type SimpleQueueType int8
@@ -38,7 +37,7 @@ func SubscribeJSON[T any](
     queueType SimpleQueueType, // an enum to represent "durable" or "transient"
     handler func(T),
 ) error{
-	pubsub.DeclareAndBind(conn,exchange,queueName,key,queueType)
+	DeclareAndBind(conn,exchange,queueName,key,queueType)
 	// channel:= make(chan amqp.Delivery)
 	// channel.Consume()
 	channel,err:=conn.Channel()
@@ -52,7 +51,7 @@ func SubscribeJSON[T any](
 	// go UnMarshal[T](chDeli)
 	for val := range chDeli{
 		var result T
-		go json.Unmarshal(val.Body,result)
+		json.Unmarshal(val.Body,result)
 		handler(result)
 		val.Ack(false)
 	}

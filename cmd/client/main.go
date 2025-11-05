@@ -11,6 +11,7 @@ import (
 
 func handlerPause(gs *gamelogic.GameState) func(routing.PlayingState) {
 	return func(ps routing.PlayingState) {
+		defer fmt.Print("> ")
 		if gs.Paused == true {
 			gs.HandlePause(routing.PlayingState{IsPaused: true})
 		} else {
@@ -33,9 +34,11 @@ func main() {
 	if err!=nil{
 		fmt.Printf("%s",err)
 	}
-	pubsub.DeclareAndBind(conn,routing.ExchangePerilDirect,routing.PauseKey+"."+username,routing.PauseKey, 1)
+	pubsub.DeclareAndBind(conn,routing.ExchangePerilDirect,routing.PauseKey+"."+username,routing.PauseKey, pubsub.Transient)
 	defer conn.Close()
 	gamestate:=gamelogic.NewGameState(username)
+	handler:=handlerPause(gamestate)
+	pubsub.SubscribeJSON(conn,routing.ExchangePerilDirect,routing.PauseKey+"."+username, routing.PauseKey,pubsub.Transient,handler)
 	var words []string
 	for{
 		if words=gamelogic.GetInput();words==nil {

@@ -33,8 +33,19 @@ func SubscribeJSON[T any](
     handler func(T),
 ) error{
 	pubsub.DeclareAndBind(conn,exchange,queueName,key,queueType)
-	channel:= make(chan amqp.Delivery)
-	channel.Consume
+	// channel:= make(chan amqp.Delivery)
+	// channel.Consume()
+	channel,err:=conn.Channel()
+	if err!=nil{
+		return err
+	}
+	chDeli,err:=channel.Consume(queueName,"",false,false,false,false,nil)
+	if err!=nil{
+		return err
+	}
+	for i :=range chDeli{
+		
+	}
 	return nil
 }
 

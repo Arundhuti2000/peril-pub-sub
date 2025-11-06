@@ -48,7 +48,7 @@ func main() {
 			case "resume": {
 				fmt.Println("Resume...")
 				pubsub.PublishJSON(ch, routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{
-					IsPaused: true,
+					IsPaused: false,
 				})
 			}
 			case "quit":{

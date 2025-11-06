@@ -12,11 +12,7 @@ import (
 func handlerPause(gs *gamelogic.GameState) func(routing.PlayingState) {
 	return func(ps routing.PlayingState) {
 		defer fmt.Print("> ")
-		if gs.Paused == true {
-			gs.HandlePause(routing.PlayingState{IsPaused: true})
-		} else {
-			gs.HandlePause(routing.PlayingState{IsPaused: false})
-		}
+		gs.HandlePause(ps)
 	}
 }
 
@@ -36,7 +32,7 @@ func main() {
 	}
 	_,queue,err:=pubsub.DeclareAndBind(conn,routing.ExchangePerilDirect,routing.PauseKey+"."+username,routing.PauseKey, pubsub.Transient)
 	defer conn.Close()
-	if err== nil{
+	if err!= nil{
 		fmt.Println("Channel Declare and Bind failed")
 	} else{
 		fmt.Printf("Queue %v declared and bound!\n", queue.Name)

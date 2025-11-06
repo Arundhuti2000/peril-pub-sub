@@ -37,13 +37,18 @@ func SubscribeJSON[T any](
     queueType SimpleQueueType, // an enum to represent "durable" or "transient"
     handler func(T),
 ) error{
-	DeclareAndBind(conn,exchange,queueName,key,queueType)
+	ch, _,err:=DeclareAndBind(conn,exchange,queueName,key,queueType)
+	if err!=nil{
+		return err
+	}
+	defer ch.Close()
 	// channel:= make(chan amqp.Delivery)
 	// channel.Consume()
 	channel,err:=conn.Channel()
 	if err!=nil{
 		return err
 	}
+	
 	chDeli,err:=channel.Consume(queueName,"",false,false,false,false,nil)
 	if err!=nil{
 		return err
@@ -76,6 +81,7 @@ func DeclareAndBind(
 		if err!= nil{
 			return ch,amqp.Queue{},fmt.Errorf("could not create channel: %v", err)
 		}
+		
 		var q amqp.Queue
 		switch queueType {
 			case 0:
@@ -92,5 +98,6 @@ func DeclareAndBind(
 		if err!=nil{
 			return nil, amqp.Queue{},fmt.Errorf("could not bind queue: %v", err)
 		}
+		
 		return ch, q, nil
 	}

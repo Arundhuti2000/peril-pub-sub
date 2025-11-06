@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -48,13 +49,21 @@ func SubscribeJSON[T any](
 	if err!=nil{
 		return err
 	}
+	
+	var wg = &sync.WaitGroup{}	
 	// go UnMarshal[T](chDeli)
 	for val := range chDeli{
 		var result T
+		wg.Add(1)
+		go func(val amqp.Delivery) {
+			fmt.Println(val)
+			wg.Done()
+		}(val)
 		json.Unmarshal(val.Body,result)
 		handler(result)
 		val.Ack(false)
 	}
+	wg.Wait()
 	return nil
 }
 
@@ -84,7 +93,7 @@ func DeclareAndBind(
 		if err!=nil{
 			return ch, amqp.Queue{}, err
 		}
-		ch.QueueBind("amqpQueue",key,exchange,false,nil)
+		ch.QueueBind("",key,exchange,false,nil)
 		
 		return ch, q, nil
 	}

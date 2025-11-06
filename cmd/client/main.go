@@ -42,8 +42,10 @@ func main() {
 	var words []string
 	for{
 		if words=gamelogic.GetInput();words==nil {
+			fmt.Println(words)
 			continue
 		}
+		fmt.Println(words)
 		switch words[0] {
 			case "spawn": {
 				fmt.Println("Spawn...")

@@ -79,7 +79,7 @@ func DeclareAndBind(
 	) (*amqp.Channel, amqp.Queue, error){
 		ch,err := conn.Channel()
 		if err!= nil{
-			return ch,amqp.Queue{},err
+			return ch,amqp.Queue{},fmt.Errorf("could not create channel: %v", err)
 		}
 		var q amqp.Queue
 		switch queueType {
@@ -88,12 +88,14 @@ func DeclareAndBind(
 			case 1:
 				q,err= ch.QueueDeclare(queueName,false, true,true, false, nil)
 			default:
-				return ch, amqp.Queue{}, nil
+				return ch, amqp.Queue{}, fmt.Errorf("could not find queue type: %v", err)
 		}
 		if err!=nil{
-			return ch, amqp.Queue{}, err
+			return ch, amqp.Queue{}, fmt.Errorf("could not declare: %v", err)
 		}
-		ch.QueueBind("",key,exchange,false,nil)
-		
+		err=ch.QueueBind("",key,exchange,false,nil)
+		if err!=nil{
+			return nil, amqp.Queue{},fmt.Errorf("could not bind queue: %v", err)
+		}
 		return ch, q, nil
 	}

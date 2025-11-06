@@ -34,8 +34,13 @@ func main() {
 	if err!=nil{
 		fmt.Printf("%s",err)
 	}
-	pubsub.DeclareAndBind(conn,routing.ExchangePerilDirect,routing.PauseKey+"."+username,routing.PauseKey, pubsub.Transient)
+	_,queue,err:=pubsub.DeclareAndBind(conn,routing.ExchangePerilDirect,routing.PauseKey+"."+username,routing.PauseKey, pubsub.Transient)
 	defer conn.Close()
+	if err== nil{
+		fmt.Println("Channel Declare and Bind failed")
+	} else{
+		fmt.Printf("Queue %v declared and bound!\n", queue.Name)
+	}
 	gamestate:=gamelogic.NewGameState(username)
 	handler:=handlerPause(gamestate)
 	pubsub.SubscribeJSON(conn,routing.ExchangePerilDirect,routing.PauseKey+"."+username, routing.PauseKey,pubsub.Transient,handler)
@@ -50,6 +55,7 @@ func main() {
 			case "spawn": {
 				fmt.Println("Spawn...")
 				gamestate.CommandSpawn(words)
+				
 				
 			}
 			case "move": {

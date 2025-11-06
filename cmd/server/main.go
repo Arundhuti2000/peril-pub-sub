@@ -31,7 +31,12 @@ func main() {
 	})
 	defer conn.Close()
 
-	pubsub.DeclareAndBind(conn,routing.ExchangePerilTopic,"game_logs","game_logs.*", 0)
+	_,_,err=pubsub.DeclareAndBind(conn,routing.ExchangePerilTopic,"game_logs","game_logs.*", 0)
+	if err!=nil{
+		fmt.Println("Failed to Declare Game logs channel")
+	} else{
+		fmt.Println("Declared Game logs channel")
+	}
 	gamelogic.PrintServerHelp()
 	var words []string
 	for{

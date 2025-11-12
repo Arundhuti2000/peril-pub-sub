@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
@@ -21,6 +22,13 @@ func main() {
 		fmt.Println("Connection Failed")
 	}
 	defer conn.Close()
+
+	publishCh, err := conn.Channel()
+	if err != nil {
+		fmt.Println("Could not create publish channel")
+		return
+	}
+	defer publishCh.Close()
 	username,err:=gamelogic.ClientWelcome()
 	if err!=nil{
 		fmt.Printf("%s",err)
@@ -58,13 +66,22 @@ func main() {
 			}
 			case "move": {
 				fmt.Println("Move...")
-				_,err:=gamestate.CommandMove(words)
-				pubsub.PublishJSON(&amqp.Channel{},routing.ExchangePerilTopic,routing.ArmyMovesPrefix+"."+username,routing.GameLog{Message:"Move Published Successfully"})
+				move,err:=gamestate.CommandMove(words)
 				if err != nil {
 					fmt.Println(err)
 					continue
 				}
+				pubsub.PublishJSON(publishCh,routing.ExchangePerilTopic,routing.ArmyMovesPrefix+"."+username,move)
+				err = pubsub.PublishJSON(publishCh, routing.ExchangePerilTopic, routing.GameLogSlug+"."+username, routing.GameLog{
+					CurrentTime: time.Now(),
+					Message:     fmt.Sprintf("%s moved units to %s", username, move.ToLocation),
+					Username:    username,
+				})
+				if err != nil {
+					fmt.Println("Error publishing game log:", err)
+				}
 			}
+			
 			case "status":{
 				fmt.Println("Status...")
 				gamestate.CommandStatus()

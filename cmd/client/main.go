@@ -9,12 +9,6 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-func handlerPause(gs *gamelogic.GameState) func(routing.PlayingState) {
-	return func(ps routing.PlayingState) {
-		defer fmt.Print("> ")
-		gs.HandlePause(ps)
-	}
-}
 
 func main() {
 	fmt.Println("Starting Peril client...")
@@ -26,12 +20,15 @@ func main() {
 	} else{
 		fmt.Println("Connection Failed")
 	}
+	defer conn.Close()
 	username,err:=gamelogic.ClientWelcome()
 	if err!=nil{
 		fmt.Printf("%s",err)
 	}
 	// _,queue,err:=pubsub.DeclareAndBind(conn,routing.ExchangePerilDirect,routing.PauseKey+"."+username,routing.PauseKey, pubsub.Transient)
-	defer conn.Close()
+	
+
+	
 	// if err!= nil{
 	// 	fmt.Println("Channel Declare and Bind failed")
 	// } else{
@@ -43,7 +40,7 @@ func main() {
 	
 	var words []string
 	for{
-		if words=gamelogic.GetInput();words==nil {
+		if words=gamelogic.GetInput();len(words)==0 {
 			fmt.Println(words)
 			continue
 		}
@@ -51,13 +48,20 @@ func main() {
 		switch words[0] {
 			case "spawn": {
 				fmt.Println("Spawn...")
-				gamestate.CommandSpawn(words)
-				
+				err:=gamestate.CommandSpawn(words)
+				if err != nil {
+				fmt.Println(err)
+				continue
+			}
 				
 			}
 			case "move": {
 				fmt.Println("Move...")
-				gamestate.CommandMove(words)
+				_,err:=gamestate.CommandMove(words)
+				if err != nil {
+					fmt.Println(err)
+					continue
+				}
 			}
 			case "status":{
 				fmt.Println("Status...")

@@ -1,7 +1,6 @@
 package pubsub
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 
@@ -14,15 +13,6 @@ const(
 	Transient SimpleQueueType = 1
 )
 
-func PublishJSON[T any](ch *amqp.Channel, exchange, key string, val T) error{
-	jsonBytes,err :=json.Marshal(val)
-	if err!=nil{
-		return fmt.Errorf("error %v", err)
-	}
-	ch.PublishWithContext(context.Background(),exchange,key,false,false,amqp.Publishing{ContentType: "application/json", Body: jsonBytes})
-	fmt.Println("")
-	return nil
-}
 // func UnMarshal[T any](chDeli <-chan amqp.Delivery) amqp.Delivery{
 // 	for val := range chDeli{
 // 		var result []T
@@ -37,26 +27,25 @@ func SubscribeJSON[T any](
     queueType SimpleQueueType, // an enum to represent "durable" or "transient"
     handler func(T),
 ) error{
-	ch, _,err:=DeclareAndBind(conn,exchange,queueName,key,queueType)
+	ch, queue,err:=DeclareAndBind(conn,exchange,queueName,key,queueType)
 	if err!=nil{
 		return err
 	}
-	defer ch.Close()
+	// 
 	// channel:= make(chan amqp.Delivery)
 	// channel.Consume()
-	channel,err:=conn.Channel()
-	if err!=nil{
-		return err
-	}
+	// channel,err:=conn.Channel()
 	
-	chDeli,err:=channel.Consume(queueName,"",false,false,false,false,nil)
+	
+	chDeli,err:=ch.Consume(queue.Name,"",false,false,false,false,nil)
 	if err!=nil{
-		return err
+		return  fmt.Errorf("could not consume messages: %v", err)
 	}
 	
 	
 	// go UnMarshal[T](chDeli)
 	go func() {
+		defer ch.Close()
 		for val := range chDeli {
 			var result T
 			json.Unmarshal(val.Body, &result)  

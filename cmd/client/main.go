@@ -37,7 +37,8 @@ func main() {
 	gamestate:=gamelogic.NewGameState(username)
 	handler:=handlerPause(gamestate)
 	pubsub.SubscribeJSON(conn,routing.ExchangePerilDirect,routing.PauseKey+"."+username, routing.PauseKey,pubsub.Transient,handler)
-	pubsub.SubscribeJSON(conn,routing.ExchangePerilDirect, routing.ArmyMovesPrefix+"."+username,routing.ArmyMovesPrefix+".*", pubsub.Transient,gamestate.HandleMove)
+	handlerMove:=handlerMove(gamestate)
+	pubsub.SubscribeJSON(conn,routing.ExchangePerilTopic, routing.ArmyMovesPrefix+"."+username,routing.ArmyMovesPrefix+".*", pubsub.Transient,handlerMove)
 	var words []string
 	for{
 		if words=gamelogic.GetInput();len(words)==0 {
@@ -58,6 +59,7 @@ func main() {
 			case "move": {
 				fmt.Println("Move...")
 				_,err:=gamestate.CommandMove(words)
+				pubsub.PublishJSON(&amqp.Channel{},routing.ExchangePerilTopic,routing.ArmyMovesPrefix+"."+username,routing.GameLog{Message:"Move Published Successfully"})
 				if err != nil {
 					fmt.Println(err)
 					continue

@@ -26,12 +26,13 @@ func handlerMove(gs *gamelogic.GameState, publishCh *amqp.Channel) func(gamelogi
 			case gamelogic.MoveOutComeSafe:
 				return pubsub.Ack
 			case gamelogic.MoveOutcomeMakeWar:
-				{
-					if err:= pubsub.PublishJSON(publishCh,routing.ExchangePerilTopic,routing.WarRecognitionsPrefix+"."+gs.GetPlayerSnap().Username,mv);err!=nil{
-						fmt.Println("failed to publish war message:", err)
-                		return pubsub.NackRequeue
-					}
-            	}
+				if err:= pubsub.PublishJSON(publishCh,routing.ExchangePerilTopic,routing.WarRecognitionsPrefix+"."+gs.GetPlayerSnap().Username,gamelogic.RecognitionOfWar{
+					Attacker: mv.Player,
+					Defender: gs.GetPlayerSnap(),
+				});err!=nil{
+					fmt.Println("failed to publish war message:", err)
+					return pubsub.NackRequeue
+				}
 				fmt.Print("Sending Acknowledgement: Processed successfully.")
 				return pubsub.Ack
 			case gamelogic.MoveOutcomeSamePlayer:

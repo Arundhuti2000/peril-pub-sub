@@ -59,6 +59,7 @@ func SubscribeJSON[T any](
 			var result T
 			json.Unmarshal(val.Body, &result)  
 			acktype:=handler(result)
+			
 			switch acktype{
 			case Ack:
 				fmt.Print("Sending Acknowledgement: Processed successfully.")

@@ -49,8 +49,11 @@ func main() {
 		fmt.Printf("%s",err)
 	}
 	
-	handlerMove:=handlerMove(gamestate)
+	handlerMove:=handlerMove(gamestate,publishCh)
 	pubsub.SubscribeJSON(conn,routing.ExchangePerilTopic, routing.ArmyMovesPrefix+"."+username,routing.ArmyMovesPrefix+".*", pubsub.Transient,handlerMove)
+	
+	handlerWar:=handlerWar(gamestate)
+	pubsub.SubscribeJSON(conn,routing.ExchangePerilTopic,"war",routing.WarRecognitionsPrefix+".*",pubsub.Durable,handlerWar)
 	var words []string
 	for{
 		if words=gamelogic.GetInput();len(words)==0 {
@@ -84,6 +87,7 @@ func main() {
 				if err != nil {
 					fmt.Println("Error publishing game log:", err)
 				}
+
 			}
 			
 			case "status":{

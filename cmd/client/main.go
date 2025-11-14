@@ -44,7 +44,7 @@ func main() {
 	// }
 	gamestate:=gamelogic.NewGameState(username)
 	handler:=handlerPause(gamestate)
-	acktype,err:=pubsub.SubscribeJSON(conn,routing.ExchangePerilDirect,routing.PauseKey+"."+username, routing.PauseKey,pubsub.Transient,handler)
+	err=pubsub.SubscribeJSON(conn,routing.ExchangePerilDirect,routing.PauseKey+"."+username, routing.PauseKey,pubsub.Transient,handler)
 	if err!=nil{
 		fmt.Printf("%s",err)
 	}

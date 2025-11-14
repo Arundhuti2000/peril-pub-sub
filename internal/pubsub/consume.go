@@ -8,7 +8,7 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 type SimpleQueueType int8
-type acktype int8
+type Acktype int8
 
 
 const(
@@ -17,9 +17,9 @@ const(
 )
 
 const (
-	Ack acktype = 1
-	NackRequeue acktype = 2
-	NackDiscar acktype = 0
+	Ack Acktype = 1
+	NackRequeue Acktype = 2
+	NackDiscar Acktype = 0
 )
 
 // func UnMarshal[T any](chDeli <-chan amqp.Delivery) amqp.Delivery{
@@ -34,7 +34,7 @@ func SubscribeJSON[T any](
     queueName,
     key string,
     queueType SimpleQueueType, // an enum to represent "durable" or "transient"
-    handler func(T) acktype,
+    handler func(T) Acktype,
 ) error{
 	ch, queue,err:=DeclareAndBind(conn,exchange,queueName,key,queueType)
 	if err!=nil{
@@ -61,13 +61,17 @@ func SubscribeJSON[T any](
 			acktype:=handler(result)
 			switch acktype{
 			case pubsub.Ack:
+				fmt.Print("Sending Acknowledgement: Processed successfully.")
 				val.Ack(false)
 			case pubsub.NackRequeue:
+				fmt.Print("Sending Nack and requeue: Not processed successfully, but should be requeued on the same queue to be processed again (retry).")
 				val.Nack(false,true)
 			case pubsub.NackDiscar:
+				fmt.Print("Sending Nack and discard: Not processed successfully, and should be discarded (to a dead-letter queue if configured or just deleted entirely).")
 				val.Nack(false,false)
+			default:
+				fmt.Print("Error while decoding acknowledgment type")
 			}
-			
 		}
 	}()
 	return nil

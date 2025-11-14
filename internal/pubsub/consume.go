@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 type SimpleQueueType int8
@@ -60,13 +60,13 @@ func SubscribeJSON[T any](
 			json.Unmarshal(val.Body, &result)  
 			acktype:=handler(result)
 			switch acktype{
-			case pubsub.Ack:
+			case Ack:
 				fmt.Print("Sending Acknowledgement: Processed successfully.")
 				val.Ack(false)
-			case pubsub.NackRequeue:
+			case NackRequeue:
 				fmt.Print("Sending Nack and requeue: Not processed successfully, but should be requeued on the same queue to be processed again (retry).")
 				val.Nack(false,true)
-			case pubsub.NackDiscar:
+			case NackDiscar:
 				fmt.Print("Sending Nack and discard: Not processed successfully, and should be discarded (to a dead-letter queue if configured or just deleted entirely).")
 				val.Nack(false,false)
 			default:
@@ -93,18 +93,19 @@ func DeclareAndBind(
 		}
 		
 		var q amqp.Queue
+		args:=amqp.Table{"x-dead-letter-exchange": routing.ExchangePerilDeadLetter}
 		switch queueType {
 			case 0:
-				q,err= ch.QueueDeclare(queueName,true,false,false,false,nil)
+				q,err= ch.QueueDeclare(queueName,true,false,false,false,args)
 			case 1:
-				q,err= ch.QueueDeclare(queueName,false, true,true, false, nil)
+				q,err= ch.QueueDeclare(queueName,false, true,true, false, args)
 			default:
 				return ch, amqp.Queue{}, fmt.Errorf("could not find queue type: %v", err)
 		}
 		if err!=nil{
 			return ch, amqp.Queue{}, fmt.Errorf("could not declare: %v", err)
 		}
-		err=ch.QueueBind(queueName,key,exchange,false,nil)
+		err=ch.QueueBind(queueName,key,exchange,false,args)
 		if err!=nil{
 			return nil, amqp.Queue{},fmt.Errorf("could not bind queue: %v", err)
 		}

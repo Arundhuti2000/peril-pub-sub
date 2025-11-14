@@ -25,6 +25,7 @@ func handlerMove(gs *gamelogic.GameState) func(gamelogic.ArmyMove) pubsub.Acktyp
 			case gamelogic.MoveOutComeSafe:
 				return pubsub.Ack
 			case gamelogic.MoveOutcomeMakeWar:
+				pubsub.PublishJSON(conn,routing.ExchangePerilTopic,routing.WarRecognitionsPrefix+"."+gs.Player.Username,)
 				return pubsub.Ack
 			case gamelogic.MoveOutcomeSamePlayer:
 				return pubsub.NackDiscar

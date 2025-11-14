@@ -44,7 +44,11 @@ func main() {
 	// }
 	gamestate:=gamelogic.NewGameState(username)
 	handler:=handlerPause(gamestate)
-	pubsub.SubscribeJSON(conn,routing.ExchangePerilDirect,routing.PauseKey+"."+username, routing.PauseKey,pubsub.Transient,handler)
+	acktype,err:=pubsub.SubscribeJSON(conn,routing.ExchangePerilDirect,routing.PauseKey+"."+username, routing.PauseKey,pubsub.Transient,handler)
+	if err!=nil{
+		fmt.Printf("%s",err)
+	}
+	
 	handlerMove:=handlerMove(gamestate)
 	pubsub.SubscribeJSON(conn,routing.ExchangePerilTopic, routing.ArmyMovesPrefix+"."+username,routing.ArmyMovesPrefix+".*", pubsub.Transient,handlerMove)
 	var words []string

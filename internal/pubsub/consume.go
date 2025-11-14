@@ -4,13 +4,22 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 type SimpleQueueType int8
+type acktype int8
+
 
 const(
 	Durable SimpleQueueType = 0
 	Transient SimpleQueueType = 1
+)
+
+const (
+	Ack acktype = 1
+	NackRequeue acktype = 2
+	NackDiscar acktype = 0
 )
 
 // func UnMarshal[T any](chDeli <-chan amqp.Delivery) amqp.Delivery{
@@ -25,7 +34,7 @@ func SubscribeJSON[T any](
     queueName,
     key string,
     queueType SimpleQueueType, // an enum to represent "durable" or "transient"
-    handler func(T),
+    handler func(T) acktype,
 ) error{
 	ch, queue,err:=DeclareAndBind(conn,exchange,queueName,key,queueType)
 	if err!=nil{
@@ -49,8 +58,16 @@ func SubscribeJSON[T any](
 		for val := range chDeli {
 			var result T
 			json.Unmarshal(val.Body, &result)  
-			handler(result)
-			val.Ack(false)
+			acktype:=handler(result)
+			switch acktype{
+			case pubsub.Ack:
+				val.Ack(false)
+			case pubsub.NackRequeue:
+				val.Nack(false,true)
+			case pubsub.NackDiscar:
+				val.Nack(false,false)
+			}
+			
 		}
 	}()
 	return nil

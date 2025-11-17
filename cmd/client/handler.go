@@ -44,11 +44,11 @@ func handlerMove(gs *gamelogic.GameState, publishCh *amqp.Channel) func(gamelogi
 	}
 }
 
-func handlerWar(gs *gamelogic.GameState) func(gamelogic.RecognitionOfWar) pubsub.Acktype {
+func handlerWar(gs *gamelogic.GameState, publishCh *amqp.Channel) func(gamelogic.RecognitionOfWar) pubsub.Acktype {
 	return func(rw gamelogic.RecognitionOfWar) pubsub.Acktype{
 		defer fmt.Print("> ")
-		moveOutcome, winner, loser:=gs.HandleWar(rw)
-		switch moveOutcome{
+		moveOutcome, winner, loser := gs.HandleWar(rw)
+		switch moveOutcome {
 		case gamelogic.WarOutcomeNotInvolved:
 			fmt.Print("Sending Nack and requeue: Not processed successfully, WarOutcomeNotInvolved (retry).")
 			return pubsub.NackRequeue
@@ -56,16 +56,28 @@ func handlerWar(gs *gamelogic.GameState) func(gamelogic.RecognitionOfWar) pubsub
 			fmt.Print("Sending Nack and discard: Not processed successfully, and should be discarded (to a dead-letter queue if configured or just deleted entirely).")
 			return pubsub.NackDiscar
 		case gamelogic.WarOutcomeOpponentWon:
+			msg := fmt.Sprintf("%s won a war against %s", winner, loser)
+			if err := publishGameLog(publishCh, rw.Attacker.Username, msg); err != nil {
+				fmt.Println("failed to publish game log:", err)
+				return pubsub.NackRequeue
+			}
 			fmt.Print("Sending Acknowledgement: Processed successfully.")
-			fmt.Printf("{%s} won a war against {%s}", winner, loser)
 			return pubsub.Ack
 		case gamelogic.WarOutcomeYouWon:
+			msg := fmt.Sprintf("%s won a war against %s", winner, loser)
+			if err := publishGameLog(publishCh, rw.Attacker.Username, msg); err != nil {
+				fmt.Println("failed to publish game log:", err)
+				return pubsub.NackRequeue
+			}
 			fmt.Print("Sending Acknowledgement: Processed successfully.")
-			fmt.Printf("{%s} won a war against {%s}", winner, loser)
 			return pubsub.Ack
 		case gamelogic.WarOutcomeDraw:
+			msg := fmt.Sprintf("A war between %s and %s resulted in a draw", winner, loser)
+			if err := publishGameLog(publishCh, rw.Attacker.Username, msg); err != nil {
+				fmt.Println("failed to publish game log:", err)
+				return pubsub.NackRequeue
+			}
 			fmt.Print("Sending Acknowledgement: Processed successfully.")
-			fmt.Printf("A war between {%s} and {%s} resulted in a draw", winner, loser)
 			return pubsub.Ack
 		default:
 			fmt.Print("Sending Nack and discard: Not processed successfully, and should be discarded (to a dead-letter queue if configured or just deleted entirely).")
@@ -75,11 +87,11 @@ func handlerWar(gs *gamelogic.GameState) func(gamelogic.RecognitionOfWar) pubsub
 	}
 }
 
-func publishGameLog(ch *amqp.Channel, key string, msg string) error{
+func publishGameLog(ch *amqp.Channel, username string, msg string) error{
 	gl:= routing.GameLog{
 		CurrentTime: time.Now(),
 		Message: msg,
-		Username: key,
+		Username: username,
 	}
-	return pubsub.PublishGob(ch,string(routing.ExchangePerilTopic),routing.GameLogSlug+"."+key, gl)
+	return pubsub.PublishGob(ch,string(routing.ExchangePerilTopic),routing.GameLogSlug+"."+username, gl)
 }

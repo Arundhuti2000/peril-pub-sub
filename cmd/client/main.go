@@ -52,7 +52,7 @@ func main() {
 	handlerMove:=handlerMove(gamestate,publishCh)
 	pubsub.SubscribeJSON(conn,routing.ExchangePerilTopic, routing.ArmyMovesPrefix+"."+username,routing.ArmyMovesPrefix+".*", pubsub.Transient,handlerMove)
 	
-	handlerWar:=handlerWar(gamestate)
+	handlerWar:=handlerWar(gamestate,publishCh)
 	pubsub.SubscribeJSON(conn,routing.ExchangePerilTopic,"war",routing.WarRecognitionsPrefix+".*",pubsub.Durable,handlerWar)
 	var words []string
 	for{

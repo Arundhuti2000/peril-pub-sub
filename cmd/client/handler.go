@@ -46,7 +46,7 @@ func handlerMove(gs *gamelogic.GameState, publishCh *amqp.Channel) func(gamelogi
 func handlerWar(gs *gamelogic.GameState) func(gamelogic.RecognitionOfWar) pubsub.Acktype {
 	return func(rw gamelogic.RecognitionOfWar) pubsub.Acktype{
 		defer fmt.Print("> ")
-		moveOutcome, _, _:=gs.HandleWar(rw)
+		moveOutcome, winner, loser:=gs.HandleWar(rw)
 		switch moveOutcome{
 		case gamelogic.WarOutcomeNotInvolved:
 			fmt.Print("Sending Nack and requeue: Not processed successfully, WarOutcomeNotInvolved (retry).")
@@ -56,12 +56,15 @@ func handlerWar(gs *gamelogic.GameState) func(gamelogic.RecognitionOfWar) pubsub
 			return pubsub.NackDiscar
 		case gamelogic.WarOutcomeOpponentWon:
 			fmt.Print("Sending Acknowledgement: Processed successfully.")
+			fmt.Printf("{%s} won a war against {%s}", winner, loser)
 			return pubsub.Ack
 		case gamelogic.WarOutcomeYouWon:
 			fmt.Print("Sending Acknowledgement: Processed successfully.")
+			fmt.Printf("{%s} won a war against {%s}", winner, loser)
 			return pubsub.Ack
 		case gamelogic.WarOutcomeDraw:
 			fmt.Print("Sending Acknowledgement: Processed successfully.")
+			fmt.Printf("A war between {%s} and {%s} resulted in a draw", winner, loser)
 			return pubsub.Ack
 		default:
 			fmt.Print("Sending Nack and discard: Not processed successfully, and should be discarded (to a dead-letter queue if configured or just deleted entirely).")

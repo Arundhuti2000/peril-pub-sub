@@ -17,3 +17,13 @@ func PublishJSON[T any](ch *amqp.Channel, exchange, key string, val T) error {
 	fmt.Println("")
 	return nil
 }
+func PublishGob[T any](ch *amqp.Channel, exchange, key string, val T) error {
+	
+	jsonBytes, err := json.Marshal(val)
+	if err != nil {
+		return fmt.Errorf("error %v", err)
+	}
+	ch.PublishWithContext(context.Background(), exchange, key, false, false, amqp.Publishing{ContentType: "application/gob", Body: jsonBytes})
+	fmt.Println("")
+	return nil
+}

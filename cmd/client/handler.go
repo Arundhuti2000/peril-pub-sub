@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
@@ -72,4 +73,13 @@ func handlerWar(gs *gamelogic.GameState) func(gamelogic.RecognitionOfWar) pubsub
 		}
 
 	}
+}
+
+func publishGameLog(ch *amqp.Channel, key string, msg string) error{
+	gl:= routing.GameLog{
+		CurrentTime: time.Now(),
+		Message: msg,
+		Username: key,
+	}
+	return pubsub.PublishGob(ch,string(routing.ExchangePerilTopic),routing.GameLogSlug+"."+key, gl)
 }

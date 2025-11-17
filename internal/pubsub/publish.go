@@ -27,9 +27,7 @@ func PublishGob[T any](ch *amqp.Channel, exchange, key string, val T) error {
 		return err
 	}
 	// jsonBytes, err := json.Marshal(val)
-	if err!= nil {
-		return fmt.Errorf("error %v", err)
-	}
+	
 	ch.PublishWithContext(context.Background(), exchange, key, false, false, amqp.Publishing{ContentType: "application/gob", Body: network.Bytes()})
 	fmt.Println("")
 	return nil

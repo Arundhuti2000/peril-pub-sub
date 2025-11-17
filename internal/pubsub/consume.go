@@ -78,7 +78,17 @@ func SubscribeJSON[T any](
 	return nil
 }
 
-
+func SubscribeGob[T any](
+	conn *amqp.Connection,
+	exchange,
+	queueName,
+	key string,
+	simpleQueueType SimpleQueueType,
+	handler func(T) Acktype,
+	unmarshaller func([]byte) (T, error),
+) error{
+	return nil
+}
 
 func DeclareAndBind(
 		conn *amqp.Connection,

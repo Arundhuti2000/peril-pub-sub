@@ -31,11 +31,19 @@ func main() {
 	})
 	defer conn.Close()
 
-	_,_,err=pubsub.DeclareAndBind(conn,routing.ExchangePerilTopic,"game_logs","game_logs.*", 0)
-	if err!=nil{
-		fmt.Println("Failed to Declare Game logs channel")
-	} else{
-		fmt.Println("Declared Game logs channel")
+	// Subscribe to all game log messages and write them to disk
+	err = pubsub.SubscribeGob(conn, routing.ExchangePerilTopic, "game_logs", routing.GameLogSlug+".*", pubsub.Durable, func(gl routing.GameLog) pubsub.Acktype {
+		defer fmt.Print("> ")
+		if err := gamelogic.WriteLog(gl); err != nil {
+			fmt.Println("failed to write log:", err)
+			return pubsub.NackRequeue
+		}
+		return pubsub.Ack
+	})
+	if err != nil {
+		fmt.Println("Failed to subscribe to game logs:", err)
+	} else {
+		fmt.Println("Subscribed to game logs")
 	}
 	gamelogic.PrintServerHelp()
 	var words []string

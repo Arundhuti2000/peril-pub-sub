@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/gob"
 	"fmt"
 
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
@@ -32,14 +34,27 @@ func main() {
 	defer conn.Close()
 
 	// Subscribe to all game log messages and write them to disk
-	err = pubsub.SubscribeGob(conn, routing.ExchangePerilTopic, "game_logs", routing.GameLogSlug+".*", pubsub.Durable, func(gl routing.GameLog) pubsub.Acktype {
-		defer fmt.Print("> ")
-		if err := gamelogic.WriteLog(gl); err != nil {
-			fmt.Println("failed to write log:", err)
-			return pubsub.NackRequeue
-		}
-		return pubsub.Ack
-	})
+	err = pubsub.SubscribeGob(
+		conn,
+		routing.ExchangePerilTopic,
+		"game_logs",
+		routing.GameLogSlug+".*",
+		pubsub.Durable,
+		func(gl routing.GameLog) pubsub.Acktype {
+			defer fmt.Print("> ")
+			if err := gamelogic.WriteLog(gl); err != nil {
+				fmt.Println("failed to write log:", err)
+				return pubsub.NackRequeue
+			}
+			return pubsub.Ack
+		},
+		func(data []byte) (routing.GameLog, error) {
+			var gl routing.GameLog
+			dec := gob.NewDecoder(bytes.NewReader(data))
+			err := dec.Decode(&gl)
+			return gl, err
+		},
+	)
 	if err != nil {
 		fmt.Println("Failed to subscribe to game logs:", err)
 	} else {

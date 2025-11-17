@@ -22,60 +22,69 @@ const (
 	NackDiscar Acktype = 0
 )
 
-// func UnMarshal[T any](chDeli <-chan amqp.Delivery) amqp.Delivery{
-// 	for val := range chDeli{
-// 		var result []T
-// 		json.Unmarshal(val.Body,result)
-// 	}
-// }
-func SubscribeJSON[T any](
-    conn *amqp.Connection,
-    exchange,
-    queueName,
-    key string,
-    queueType SimpleQueueType, // an enum to represent "durable" or "transient"
-    handler func(T) Acktype,
-) error{
-	ch, queue,err:=DeclareAndBind(conn,exchange,queueName,key,queueType)
-	if err!=nil{
+func subscribe[T any](
+	conn *amqp.Connection,
+	exchange,
+	queueName,
+	key string,
+	simpleQueueType SimpleQueueType,
+	handler func(T) Acktype,
+	unmarshaller func([]byte) (T, error),
+) error {
+	ch, queue, err := DeclareAndBind(conn, exchange, queueName, key, simpleQueueType)
+	if err != nil {
 		return err
 	}
-	// 
-	// channel:= make(chan amqp.Delivery)
-	// channel.Consume()
-	// channel,err:=conn.Channel()
-	
-	
-	chDeli,err:=ch.Consume(queue.Name,"",false,false,false,false,nil)
-	if err!=nil{
-		return  fmt.Errorf("could not consume messages: %v", err)
+
+	chDeli, err := ch.Consume(queue.Name, "", false, false, false, false, nil)
+	if err != nil {
+		return fmt.Errorf("could not consume messages: %v", err)
 	}
-	
-	
-	// go UnMarshal[T](chDeli)
+
 	go func() {
 		defer ch.Close()
 		for val := range chDeli {
-			var result T
-			json.Unmarshal(val.Body, &result)  
-			acktype:=handler(result)
-			
-			switch acktype{
+			result, err := unmarshaller(val.Body)
+			if err != nil {
+				fmt.Printf("error unmarshalling: %v\n", err)
+				val.Nack(false, true)
+				continue
+			}
+
+			acktype := handler(result)
+
+			switch acktype {
 			case Ack:
 				fmt.Print("Sending Acknowledgement: Processed successfully.")
 				val.Ack(false)
 			case NackRequeue:
 				fmt.Print("Sending Nack and requeue: Not processed successfully, but should be requeued on the same queue to be processed again (retry).")
-				val.Nack(false,true)
+				val.Nack(false, true)
 			case NackDiscar:
 				fmt.Print("Sending Nack and discard: Not processed successfully, and should be discarded (to a dead-letter queue if configured or just deleted entirely).")
-				val.Nack(false,false)
+				val.Nack(false, false)
 			default:
 				fmt.Print("Error while decoding acknowledgment type")
 			}
 		}
 	}()
 	return nil
+}
+
+func SubscribeJSON[T any](
+	conn *amqp.Connection,
+	exchange,
+	queueName,
+	key string,
+	queueType SimpleQueueType,
+	handler func(T) Acktype,
+) error {
+	unmarshaller := func(data []byte) (T, error) {
+		var result T
+		err := json.Unmarshal(data, &result)
+		return result, err
+	}
+	return subscribe(conn, exchange, queueName, key, queueType, handler, unmarshaller)
 }
 
 func SubscribeGob[T any](
@@ -86,8 +95,8 @@ func SubscribeGob[T any](
 	simpleQueueType SimpleQueueType,
 	handler func(T) Acktype,
 	unmarshaller func([]byte) (T, error),
-) error{
-	return nil
+) error {
+	return subscribe(conn, exchange, queueName, key, simpleQueueType, handler, unmarshaller)
 }
 
 func DeclareAndBind(

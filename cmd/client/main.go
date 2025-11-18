@@ -99,8 +99,11 @@ func main() {
 				gamelogic.PrintClientHelp()
 			}
 			case "spam":{
-				fmt.Println("Spamming not allowed yet!...")
-			
+				fmt.Println("Spamming allowed!...")
+				gamestate.CommandSpam(words,publishCh)
+				if err != nil {
+					fmt.Println(err)
+				}
 			}
 			case "quit":{
 				gamelogic.PrintQuit()

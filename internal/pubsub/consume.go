@@ -35,7 +35,7 @@ func subscribe[T any](
 	if err != nil {
 		return err
 	}
-
+	ch.Qos(10,10,true)
 	chDeli, err := ch.Consume(queue.Name, "", false, false, false, false, nil)
 	if err != nil {
 		return fmt.Errorf("could not consume messages: %v", err)
